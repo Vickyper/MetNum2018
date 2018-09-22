@@ -1,0 +1,69 @@
+%Cantidad de puntos deseados
+n=185;
+%Arreglos para u, v, z, donde z va a ser la altura al levantar sobre el paraboloide
+u = zeros(1,n);
+v = zeros(1,n);
+p = zeros(1,n);
+q = zeros(1,n);
+z = zeros(1,n);
+%Valores iniciales 
+u(1) = -400;
+v(1) = -400;
+p(1) = 1/sqrt(3); 
+q(1) = 1/sqrt(3);
+%Avance
+h=1.92;
+for k = 0 : n-2
+   u(k+2) = p(k+1).*h+u(k+1);
+   v(k+2)=q(k+1).*h+v(k+1);
+   p(k+2)=p(k+1)-2.*h.*v(k+1).*p(k+1).*q(k+1)/(1+v(k+1).*v(k+1)+u(k+1).*u(k+1));
+   q(k+2)=q(k+1)-2.*h.*u(k+1).*p(k+1).*q(k+1)/(1+v(k+1).*v(k+1)+u(k+1).*u(k+1));
+   k=k+1;
+endfor
+for k=1:n
+    z(k)=u(k).*v(k);
+    k=k+1;
+endfor 
+%Resolución del paraboloide “ideal” hecho por Octave
+a = zeros(1,4)
+function e = fcn(a,t)
+  e(1) = a(3);
+  e(2) = a(4);
+  e(3) =-2*a(2)*a(3)*a(4)/(1+a(2)*a(2)+a(1)*a(1));
+  e(4) =-2*a(1)*a(3)*a(4)/(1+a(2)*a(2)+ a(1)*a(1));
+  endfunction
+  y0 = [-400;-400;1/sqrt(3);1/sqrt(3)];
+  t = [1:1:350];
+  a = lsode("fcn",y0,t);
+%Calculo del error
+Error_Absoluto_de_u  = 0;
+Error_Absoluto_de_v = 0;
+Norma_ideal = 0;
+for k=1:n
+  Error_Absoluto_de_u  = Error_Absoluto_de_u  + (u(k) - a(k)).*(u(k) - a(k));
+  Error_Absoluto_de_v  = Error_Absoluto_de_v  + (v(k) - a(k)).*(v(k) - a(k));
+  Norma_ideal = Norma_ideal + a(k).*a(k);
+endfor
+Error_Absoluto_de_u  = sqrt(Error_Absoluto_de_u);
+Error_Absoluto_de_v  = sqrt(Error_Absoluto_de_v);
+Norma_ideal = sqrt(Norma_ideal);
+Error_Relativo_de_u = Error_Absoluto_de_u/Norma_ideal;
+Error_Relativo_de_v = Error_Absoluto_de_v/Norma_ideal;
+%Graficas
+%Esta es la gráfica del paraboloide con la geodésica 
+figure(1);
+plot3(u,v,z,'r'),xlabel('Eje X'),ylabel('Eje Y'),zlabel('Eje Z');
+hold on;
+  plot3(u,v,z,'o');
+  f=[-500:50:500];
+  c=f;
+  [F,C]=meshgrid(f,c);
+  mesh(F,C,F.*C);
+%Gráficas de comparación de u y v calculados con u y v "ideales"
+  figure(2)
+  plot(t,a(:,1),"r−",u,"o");
+  legend("u(s) ideal","u(s) calculado")
+  figure(3)
+  plot(t,a(:,2),"r−",v,"o");
+  legend("v(s) ideal","v(s) calculado")
+hold off;
