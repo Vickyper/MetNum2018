@@ -1,0 +1,163 @@
+%Cantidad de puntos deseados
+p=200;
+%Arreglos para u, v, z, donde z va a ser la altura al levantar sobre el paraboloide
+%y sería un vector y=(u,v,m,n)
+u = zeros(1,p);
+v = zeros(1,p);
+m = zeros(1,p);
+n = zeros(1,p);
+z = zeros(1,p);
+%Valores iniciales 
+u(1) = -400;
+v(1) = -400;
+m(1) = 1/sqrt(3); 
+n(1) = 1/sqrt(3);
+%Avance
+h=0.15;
+%Tolerancia
+tol=0.00005;
+%Arreglos para tener el elemento supra k y supra k+1 en todo momento
+act = zeros(1,4);  %act= vector y supra k+1
+ant = zeros(1,4); %ant = vector y supra k
+for t=1:p-1 
+    %hallo el elemento t+1
+     act(1) = u(t) + h.*m(t);
+     act(2) = v(t) + h.*n(t);
+     act(3) = m(t)-2.*h.*m(t).*n(t).*(u(t)/(1+u(t).*u(t)+v(t).*v(t)));
+     act(4) = n(t)-2.*h.*m(t).*n(t).*(v(t)/(1+u(t).*u(t)+v(t).*v(t)));
+     do
+          %antes de pasar a hallar el actual tengo que guardar el de la iteración pasada como anterior
+          ant(1)=act(1);
+         ant(2)=act(2);
+         ant(3)=act(3);
+         ant(4)=act(4);
+        %Matriz Jacobiana de F(yt+1) = yn+1 - yn -h/2(f(tn,tn) + f(tn+1,yn+1))
+        JF=[1,0,0,-h./2   ;
+        0,1,-h./2,0      ; 
+         -2.*ant(3).*ant(4).*ant(2).*ant(1).*h./( -2.*ant(3).*ant(4).*ant(2).*ant(1).*h./(1+ant(1).*ant(1)+ant(2).*ant(2)).*(1+ant(1).*ant(1)+ant(2).*ant(2))),h.*ant(3).*ant(4).*(1+ant(1).*ant(1)-ant(2).*ant(2)./((1+ant(1).*ant(1)+ant(2).*ant(2)).*(1+ant(1).*ant(1)+ant(2).*ant(2)))),1+h.*ant(4).*ant(2)./(1+ant(1).*ant(1)+ant(2).*ant(2)),h.*ant(2).*ant(3)./(1+ant(1).*ant(1)+ant(2).*ant(2));
+         h.*ant(3).*ant(4).*(1-ant(1).*ant(1)+ant(2).*ant(2))./((1+ant(1).*ant(1)+ant(2).*ant(2)).*(1+ant(1).*ant(1)+ant(2).*ant(2))),-2.*ant(3).*ant(4).*ant(2).*ant(1).*h./( -2.*ant(3).*ant(4).*ant(2).*ant(1).*h./(1+ant(1).*ant(1)+ant(2).*ant(2)).*(1+ant(1).*ant(1)+ant(2).*ant(2))),h.*ant(4).*ant(1)./(1+ant(1).*ant(1)+ant(2).*ant(2)),1+h.*ant(3).*ant(1)./(1+ant(1).*ant(1)+ant(2).*ant(2))];  
+        b=[-ant(1)+u(t)+h.*(m(t)+ant(3))./2  ;  -ant(2)+v(t)+h.*(n(t)+ant(4))./2  ;  -ant(3) + m(t) - h.*m(t).*n(t).*v(t)./(1+u(t).*u(t)+v(t).*v(t)) + h.*ant(3).*ant(4).*ant(2)./(1+ant(1).*ant(1)+ant(2).*ant(2))  ;  -ant(4)+ n(t) - h.*m(t).*n(t).*u(t)./(1+u(t).*u(t)+v(t).*v(t)) + h.*ant(3).*ant(4).*ant(1)./(1+ant(1).*ant(1)+ant(2).*ant(2))];
+        s=linsolve(JF,b);
+        act(1)=ant(1)+s(1);
+        act(2)=ant(2)+s(2);
+        act(3)=ant(3)+s(3);
+        act(4)=ant(4)+s(4);
+      until ((abs(act(1)-ant(1))<tol) && (abs(act(2)-ant(2))<tol) && (abs(act(2)-ant(2))<tol) && (abs(act(2)-ant(2))<tol)) %En realidad habría que comparar la diferencia entre los dos vectores enteros
+       u(t+1)=act(1);
+       v(t+1)=act(2);
+       m(t+1)=act(3);
+       n(t+1)=act(4);
+       t= t+1;
+ endfor
+
+for k=1:p
+    z(k)=u(k).*v(k);
+    k=k+1;
+endfor 
+%Resolución del paraboloide “ideal” hecho por Octave
+fg=@(t,x) [x(3);x(4);-2*((x(2)*x(3)*x(4))/(1 + (x(1)*x(1)) + (x(2)*x(2))));-2*((x(1)*x(3)*x(4))/(1 + (x(1)*x(1)) + (x(2)*x(2))))]; % x(1) := u ; x(2) := v ; x(3) := p ; x(4) := q
+x0 = [-400;-400;1/sqrt(3);1/sqrt(3)];
+t = [0:h:h*(p-1)];
+[t,x] = ode45(fg,t,x0);
+
+  %Calculo del error
+%Error_Absoluto_de_u  = 0;
+%Error_Absoluto_de_v = 0;
+%Norma_ideal = 0;
+%for k=1:p
+ % Error_Absoluto_de_u  = Error_Absoluto_de_u  + (u(k) - a(k)).*(u(k) - a(k));
+ % Error_Absoluto_de_v  = Error_Absoluto_de_v  + (v(k) - a(k)).*(v(k) - a(k));
+ % Norma_ideal = Norma_ideal + a(k).*a(k);
+%endfor
+%Error_Absoluto_de_u  = sqrt(Error_Absoluto_de_u);
+%Error_Absoluto_de_v  = sqrt(Error_Absoluto_de_v);
+%Norma_ideal = sqrt(Norma_ideal);
+%Error_Relativo_de_u = Error_Absoluto_de_u/Norma_ideal;
+%Error_Relativo_de_v = Error_Absoluto_de_v/Norma_ideal;
+Error_global_u = zeros(1,p);
+Error_global_v = zeros(1,p);
+Error_global_u(1) = 0;
+Error_global_v(1) = 0;
+for k = 2 : p 
+    Error_global_u(k) = abs(x(k-1,1) - u(k-1)) + abs(x(k,1) - u(k));
+    Error_global_v(k) = abs(x(k-1,2) - v(k-1)) + abs(x(k,2) - v(k));
+endfor
+%Graficas
+%Esta es la gráfica del paraboloide con la geodésica 
+figure(1);
+%nuestra solución
+plot3(u,v,z,'o'),xlabel('Eje X'),ylabel('Eje Y'),zlabel('Eje Z');
+hold on;
+  %solución ideal
+  plot3(x(:,1),x(:,2),x(:,1).*x(:,2),'r'); %??
+  f=[-500:50:500];
+  c=f;
+  [F,C]=meshgrid(f,c);
+  mesh(F,C,F.*C);
+%Gráficas de comparación de u y v calculados con u y v "ideales"
+  figure(2)
+  plot(t,x(:,1),"r-",t,u,"b");
+  legend("u(s) ideal","u(s) calculado")
+  figure(3)
+  plot(t,x(:,2),"r-",t,v,"b");
+  legend("v(s) ideal","v(s) calculado")
+hold off;
+  figure(4);
+  plot(t,Error_global_u,"o");
+  title("Trapecio");
+  legend("Error global en u")
+  figure(5)
+  plot(t,Error_global_v,"o");
+  legend("Error global en v")
+  
+  Error_por_h_u = zeros(1,20);
+l = zeros(1,20);
+X=zeros(1,4);
+xk=zeros(1,4);
+for i=1 : 20
+   l(i) = h; % Vector l esta en orden descendente
+ for t=1:p-1 
+    %hallo el elemento t+1
+     act(1) = u(t) + h.*m(t);
+     act(2) = v(t) + h.*n(t);
+     act(3) = m(t)-2.*h.*m(t).*n(t).*(u(t)/(1+u(t).*u(t)+v(t).*v(t)));
+     act(4) = n(t)-2.*h.*m(t).*n(t).*(v(t)/(1+u(t).*u(t)+v(t).*v(t)));
+     do
+          %antes de pasar a hallar el actual tengo que guardar el de la iteración pasada como anterior
+          ant(1)=act(1);
+         ant(2)=act(2);
+         ant(3)=act(3);
+         ant(4)=act(4);
+        %Matriz Jacobiana de F(yt+1) = yn+1 - yn -h/2(f(tn,tn) + f(tn+1,yn+1))
+        JF=[1,0,0,-h./2   ;
+        0,1,-h./2,0      ; 
+         -2.*ant(3).*ant(4).*ant(2).*ant(1).*h./( -2.*ant(3).*ant(4).*ant(2).*ant(1).*h./(1+ant(1).*ant(1)+ant(2).*ant(2)).*(1+ant(1).*ant(1)+ant(2).*ant(2))),h.*ant(3).*ant(4).*(1+ant(1).*ant(1)-ant(2).*ant(2)./((1+ant(1).*ant(1)+ant(2).*ant(2)).*(1+ant(1).*ant(1)+ant(2).*ant(2)))),1+h.*ant(4).*ant(2)./(1+ant(1).*ant(1)+ant(2).*ant(2)),h.*ant(2).*ant(3)./(1+ant(1).*ant(1)+ant(2).*ant(2));
+         h.*ant(3).*ant(4).*(1-ant(1).*ant(1)+ant(2).*ant(2))./((1+ant(1).*ant(1)+ant(2).*ant(2)).*(1+ant(1).*ant(1)+ant(2).*ant(2))),-2.*ant(3).*ant(4).*ant(2).*ant(1).*h./( -2.*ant(3).*ant(4).*ant(2).*ant(1).*h./(1+ant(1).*ant(1)+ant(2).*ant(2)).*(1+ant(1).*ant(1)+ant(2).*ant(2))),h.*ant(4).*ant(1)./(1+ant(1).*ant(1)+ant(2).*ant(2)),1+h.*ant(3).*ant(1)./(1+ant(1).*ant(1)+ant(2).*ant(2))];  
+        b=[-ant(1)+u(t)+h.*(m(t)+ant(3))./2  ;  -ant(2)+v(t)+h.*(n(t)+ant(4))./2  ;  -ant(3) + m(t) - h.*m(t).*n(t).*v(t)./(1+u(t).*u(t)+v(t).*v(t)) + h.*ant(3).*ant(4).*ant(2)./(1+ant(1).*ant(1)+ant(2).*ant(2))  ;  -ant(4)+ n(t) - h.*m(t).*n(t).*u(t)./(1+u(t).*u(t)+v(t).*v(t)) + h.*ant(3).*ant(4).*ant(1)./(1+ant(1).*ant(1)+ant(2).*ant(2))];
+        s=linsolve(JF,b);
+        act(1)=ant(1)+s(1);
+        act(2)=ant(2)+s(2);
+        act(3)=ant(3)+s(3);
+        act(4)=ant(4)+s(4);
+      until ((abs(act(1)-ant(1))<tol) && (abs(act(2)-ant(2))<tol) && (abs(act(2)-ant(2))<tol) && (abs(act(2)-ant(2))<tol)) %En realidad habría que comparar la diferencia entre los dos vectores enteros
+       u(t+1)=act(1);
+       v(t+1)=act(2);
+       m(t+1)=act(3);
+       n(t+1)=act(4);
+       t= t+1;
+ endfor
+maximo = 0;
+iter = 1;
+do
+  X=[x(iter,1), x(iter,2), x(iter,3),x(iter,4)];
+  xk=[u(iter), v(iter), m(iter), n(iter)];
+  if (((X-xk)*(X-xk)') > maximo)
+    maximo = sqrt((X-xk)*(X-xk)') ; 
+    endif
+  iter = iter + 1;
+until iter>p
+  Error_por_h_u(i) = maximo;
+  i= i + 1;
+  h= h + (h/7); 
+endfor 
+w=polyfit(log(l),log(Error_por_h_u),1)
