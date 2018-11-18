@@ -1,0 +1,119 @@
+n = 200;
+u = zeros(1,n);
+v = zeros(1,n);
+p = zeros(1,n);
+q = zeros(1,n);%Valores iniciales 
+z = zeros(1,n);
+u(1) = -400;
+v(1) = -400;
+p(1) = 1/sqrt(3); 
+q(1) = 1/sqrt(3);
+%Avance
+h = 0.12;
+for k = 0 : n-2
+   u(k+2) = u(k+1) + (h/2)*(p(k+1) + p(k+1) - ((2*h*v(k+1)*p(k+1)*q(k+1))/(1+(u(k+1).*u(k+1))+(v(k+1).*v(k+1)))));
+   v(k+2)=  v(k+1) + (h/2)*(q(k+1) + q(k+1) - ((2*h*u(k+1)*p(k+1)*q(k+1))/(1+(u(k+1).*u(k+1))+(v(k+1).*v(k+1)))));
+   p(k+2)=  p(k+1) + (h/2)*((((-2)*v(k+1)*q(k+1)*p(k+1))/(1+(u(k+1)*u(k+1))+(v(k+1)*v(k+1))))  +  (((-2)*(v(k+1) + h*q(k+1))*(p(k+1) + h*(((-2)*v(k+1)*q(k+1)*p(k+1))/(1+(u(k+1)*u(k+1))+(v(k+1)*v(k+1)))))*(q(k+1) + h*(((-2)*v(k+1)*q(k+1)*p(k+1))/(1+(u(k+1)*u(k+1))+(v(k+1)*v(k+1))))))     /      (1 + ((u(k+1) + h*p(k+1))*(u(k+1) + h*p(k+1))) + ((v(k+1) + h*q(k+1))*(v(k+1) + h*q(k+1))))));
+   q(k+2)=  q(k+1) + (h/2)*((((-2)*u(k+1)*q(k+1)*p(k+1))/(1+(u(k+1)*u(k+1))+(v(k+1)*v(k+1))))  +  (((-2)*(u(k+1) + h*p(k+1))*(p(k+1) + h*(((-2)*v(k+1)*q(k+1)*p(k+1))/(1+(u(k+1)*u(k+1))+(v(k+1)*v(k+1)))))*(q(k+1) + h*(((-2)*v(k+1)*q(k+1)*p(k+1))/(1+(u(k+1)*u(k+1))+(v(k+1)*v(k+1))))))     /      (1 + ((u(k+1) + h*p(k+1))*(u(k+1) + h*p(k+1))) + ((v(k+1) + h*q(k+1))*(v(k+1) + h*q(k+1))))));
+   k=k+1;
+endfor
+
+for k=1:n
+    z(k)=u(k).*v(k);
+    k=k+1;
+endfor 
+%Resolución del paraboloide “ideal” hecho por Octave
+fg=@(t,x) [x(3);x(4);-2*((x(2)*x(3)*x(4))/(1 + (x(1)*x(1)) + (x(2)*x(2))));-2*((x(1)*x(3)*x(4))/(1 + (x(1)*x(1)) + (x(2)*x(2))))]; % x(1) := u ; x(2) := v ; x(3) := p ; x(4) := q
+x0 = [-400;-400;1/sqrt(3);1/sqrt(3)];
+t = [0:h:(n-1)*h];
+[t,x] = ode45(fg,t,x0);
+
+  %Calculo del error
+%Error_Absoluto_de_u  = 0;
+%Error_Absoluto_de_v = 0;
+%Norma_ideal = 0;
+%for k=1:n
+ % Error_Absoluto_de_u  = Error_Absoluto_de_u  + (u(k) - a(k)).*(u(k) - a(k));
+ % Error_Absoluto_de_v  = Error_Absoluto_de_v  + (v(k) - a(k)).*(v(k) - a(k));
+ % Norma_ideal = Norma_ideal + a(k).*a(k);
+%endfor
+%Error_Absoluto_de_u  = sqrt(Error_Absoluto_de_u);
+%Error_Absoluto_de_v  = sqrt(Error_Absoluto_de_v);
+%Norma_ideal = sqrt(Norma_ideal);
+%Error_Relativo_de_u = Error_Absoluto_de_u/Norma_ideal;
+%Error_Relativo_de_v = Error_Absoluto_de_v/Norma_ideal;
+Error_global_u = zeros(1,n);
+Error_global_v = zeros(1,n);
+Error_global_u(1) = 0;
+Error_global_v(1) = 0;
+for k = 2 : n 
+    Error_global_u(k) = abs(x(k,1) - u(k));
+    Error_global_v(k) = abs(x(k,2) - v(k));
+endfor
+
+%Graficas
+%Esta es la gráfica del paraboloide con la geodésica 
+figure(1);
+%nuestra solución
+plot3(u,v,z,'o'),xlabel('Eje X'),ylabel('Eje Y'),zlabel('Eje Z');
+hold on;
+  %solución ideal
+  plot3(x(:,1),x(:,2),x(:,1).*x(:,2),'r'); %??
+  f=[-500:50:500];
+  c=f;
+  [F,C]=meshgrid(f,c);
+  mesh(F,C,F.*C);
+%Gráficas de comparación de u y v calculados con u y v "ideales"
+  figure(2)
+  plot(t,x(:,1),"r-");
+  legend("u(s) ideal")
+  hold on
+  plot(t,u,'b')
+  legend("u(s) calculado")
+  hold off
+  figure(3)
+  plot(t,x(:,2),"r-");
+  legend("v(s) ideal")
+  hold on
+  plot(t,v,'b')
+  legend("v(s) calculado")
+  hold off
+hold off
+  figure(4);
+  plot(t,Error_global_u,"o");
+  title("Heun");
+  legend("Error global en u")
+  figure(5)
+  plot(t,Error_global_v,"o");
+  legend("Error global en v")
+  
+  
+Error_por_h_u = zeros(1,20);
+l = zeros(1,20);
+X=zeros(1,4);
+xk=zeros(1,4);
+for i=1 : 20
+   l(i) = h; % Vector l esta en orden descendente
+   for k = 0 : n-2
+   u(k+2) = u(k+1) + (h/2)*(p(k+1) + p(k+1) - ((2*h*v(k+1)*p(k+1)*q(k+1))/(1+(u(k+1).*u(k+1))+(v(k+1).*v(k+1)))));
+   v(k+2)=  v(k+1) + (h/2)*(q(k+1) + q(k+1) - ((2*h*u(k+1)*p(k+1)*q(k+1))/(1+(u(k+1).*u(k+1))+(v(k+1).*v(k+1)))));
+   p(k+2)=  p(k+1) + (h/2)*((((-2)*v(k+1)*q(k+1)*p(k+1))/(1+(u(k+1)*u(k+1))+(v(k+1)*v(k+1))))  +  (((-2)*(v(k+1) + h*q(k+1))*(p(k+1) + h*(((-2)*v(k+1)*q(k+1)*p(k+1))/(1+(u(k+1)*u(k+1))+(v(k+1)*v(k+1)))))*(q(k+1) + h*(((-2)*v(k+1)*q(k+1)*p(k+1))/(1+(u(k+1)*u(k+1))+(v(k+1)*v(k+1))))))     /      (1 + ((u(k+1) + h*p(k+1))*(u(k+1) + h*p(k+1))) + ((v(k+1) + h*q(k+1))*(v(k+1) + h*q(k+1))))));
+   q(k+2)=  q(k+1) + (h/2)*((((-2)*u(k+1)*q(k+1)*p(k+1))/(1+(u(k+1)*u(k+1))+(v(k+1)*v(k+1))))  +  (((-2)*(u(k+1) + h*p(k+1))*(p(k+1) + h*(((-2)*v(k+1)*q(k+1)*p(k+1))/(1+(u(k+1)*u(k+1))+(v(k+1)*v(k+1)))))*(q(k+1) + h*(((-2)*v(k+1)*q(k+1)*p(k+1))/(1+(u(k+1)*u(k+1))+(v(k+1)*v(k+1))))))     /      (1 + ((u(k+1) + h*p(k+1))*(u(k+1) + h*p(k+1))) + ((v(k+1) + h*q(k+1))*(v(k+1) + h*q(k+1))))));
+   k=k+1;
+endfor
+maximo = 0;
+iter = 1;
+do
+  X=[x(iter,1), x(iter,2), x(iter,3),x(iter,4)];
+  xk=[u(iter), v(iter), p(iter), q(iter)];
+  if ((sqrt((X-xk)*(X-xk)')) > maximo)
+    maximo = sqrt((X-xk)*(X-xk)') ; 
+    endif
+  iter = iter + 1;
+until iter > (n)
+  Error_por_h_u(i) = maximo;
+  i= i + 1;
+  h= h + (h/7); 
+endfor 
+
+ w=polyfit(log(l),log(Error_por_h_u),1)
